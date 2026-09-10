@@ -1,0 +1,19 @@
+# Vivado Project Directories and Build Artifacts
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+.Xil/
+*.gen/
+
+# Vivado Log and Journal Files
+*.log
+*.jou
+*.str
+
+# Compiled / Generated Files
+*.dcp
+*.bit
+*.mcs
+*.bin
