@@ -6,7 +6,8 @@ module datapath(
     output [31:0] instruction,
     input [1:0] reg_ctrl,
     input [5:0] alu_ctrl, 
-    input [2:0] imm_ctrl
+    input [2:0] imm_ctrl,
+    input mem_write
     //The last 4 bits are the ALU function, and the first two bits are select lines for ALU input MUXes.
     );
     
@@ -21,6 +22,7 @@ module datapath(
     
     reg [31:0] id_rs1;
     reg [31:0] id_rs2;
+    reg [31:0] ex_rs2;
     
     wire [31:0] immediate;
     reg [31:0] id_immediate;
@@ -40,8 +42,10 @@ module datapath(
     
     reg [5:0]id_alu_ctrl;
     
-    
     wire [31:0] alu_in_2;
+    
+    reg id_mem_write;
+    reg ex_mem_write;
     
     assign instruction = if_instr;
     
@@ -59,12 +63,13 @@ module datapath(
         id_rd <= if_instr[11:7]; //The field that contains the destination addr for regfile.
         id_alu_ctrl <= alu_ctrl;
         id_reg_ctrl <= reg_ctrl;
-    
+        id_mem_write <= mem_write;
         
         ex_alu_result <= alu_result;
         ex_rd <= id_rd;
         ex_reg_ctrl <= id_reg_ctrl;
-        
+        ex_mem_write <= id_mem_write;
+        ex_rs2 <= id_rs2;
         
         mem_alu_result <= ex_alu_result;
         mem_rd <= ex_rd;
@@ -88,6 +93,6 @@ module datapath(
     assign alu_in_2 = id_alu_ctrl[4]?id_immediate:id_rs2; // This controls the value at second input of ALU, either rs2 or immediate from immediate generator
     
     alu alu_inst (.alu_ctrl(id_alu_ctrl[3:0]), .a(id_rs1), .b(alu_in_2), .alu_result(alu_result), .t_branch(t_branch));
-    datamem dm (.address(ex_alu_result), .write_data(32'b0), .read_data(datamem_read), .clk(clk), .mem_write(1'b0), .funct3(3'b010));
+    datamem dm (.address(ex_alu_result), .write_data(ex_rs2), .read_data(datamem_read), .clk(clk), .mem_write(ex_mem_write), .funct3(3'b010));
 
 endmodule
