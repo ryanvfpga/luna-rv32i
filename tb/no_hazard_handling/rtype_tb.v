@@ -48,7 +48,7 @@ module rtype_tb();
         dut.dp.instrmem_inst.mem_loc[8] = 32'h0011a6b3; // slt x13, x3, x1 (-5 < 15 = 1)
         dut.dp.instrmem_inst.mem_loc[9] = 32'h0011b733; // sltu x14, x3, x1 (unsigned -5 < 15 = 0)
 
-        // nops to flush pipeline (addi x0, x0, 0)
+        // nops
         dut.dp.instrmem_inst.mem_loc[10] = 32'h00000013;
         dut.dp.instrmem_inst.mem_loc[11] = 32'h00000013;
         dut.dp.instrmem_inst.mem_loc[12] = 32'h00000013;
@@ -63,7 +63,7 @@ module rtype_tb();
 
         #15 rst = 0;
 
-        // wait for 10 instrs + 5 nops to clear WB stage
+       
         #150;
 
         // check results

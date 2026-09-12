@@ -14,7 +14,7 @@ module load_tb();
         rst = 1;
         err_count = 0;
 
-        // load instructions directly to memory
+  
         dut.dp.instrmem_inst.mem_loc[0] = 32'h0000a283; // lw x5, 0(x1)   -> load from addr 0
         dut.dp.instrmem_inst.mem_loc[1] = 32'h0040a303; // lw x6, 4(x1)   -> load from addr 4
         dut.dp.instrmem_inst.mem_loc[2] = 32'hffc12383; // lw x7, -4(x2)  -> load from addr 4 (8-4)
@@ -29,7 +29,7 @@ module load_tb();
         dut.dp.dm.regs[0]  = 32'h11223344; // addr 0
         dut.dp.dm.regs[1]  = 32'h55667788; // addr 4
         dut.dp.dm.regs[2]  = 32'h99aabbcc; // addr 8
-        dut.dp.dm.regs[25] = 32'hdeadbeef; // addr 100 (
+        dut.dp.dm.regs[25] = 32'hdeadbeef; // addr 100 
 
         #15 rst = 0;
 

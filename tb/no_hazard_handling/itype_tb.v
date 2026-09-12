@@ -12,7 +12,7 @@ module itype_tb();
         rst = 1;
         err_count = 0;
 
-        // load instructions directly to memory
+     
         // x1=15, x2=25, x3=-5, x4=3
         dut.dp.instrmem_inst.mem_loc[0] = 32'h00a08293; // addi x5, x1, 10   (15 + 10 = 25)
         dut.dp.instrmem_inst.mem_loc[1] = 32'h0001a313; // slti x6, x3, 0    (-5 < 0 = 1)
@@ -24,7 +24,7 @@ module itype_tb();
         dut.dp.instrmem_inst.mem_loc[7] = 32'h00215613; // srli x12, x2, 2   (25 >> 2 = 6)
         dut.dp.instrmem_inst.mem_loc[8] = 32'h4021d693; // srai x13, x3, 2   (-5 >>> 2 = -2)
 
-        // nops to flush pipeline (addi x0, x0, 0)
+        // nops
         dut.dp.instrmem_inst.mem_loc[9] = 32'h00000013;
         dut.dp.instrmem_inst.mem_loc[10] = 32'h00000013;
         dut.dp.instrmem_inst.mem_loc[11] = 32'h00000013;
@@ -41,8 +41,7 @@ module itype_tb();
 
        
         #150;
-
-        // check results
+        
         if (dut.dp.rf.regs[5] !== 32'd25) begin $display("ADDI failed: expected 25, got %d", dut.dp.rf.regs[5]); err_count = err_count + 1; end
         if (dut.dp.rf.regs[6] !== 32'd1)  begin $display("SLTI failed: expected 1, got %d", dut.dp.rf.regs[6]); err_count = err_count + 1; end
         if (dut.dp.rf.regs[7] !== 32'd0)  begin $display("SLTIU failed: expected 0, got %d", dut.dp.rf.regs[7]); err_count = err_count + 1; end
