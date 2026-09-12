@@ -23,7 +23,7 @@
 module control(
     input [31:0] instr,
     output reg reg_write,
-    output reg [3:0] alu_ctrl
+    output reg [5:0] alu_ctrl
     
     );
     
@@ -41,13 +41,21 @@ module control(
         case(opcode)
         
             7'b0110011: begin
-                alu_ctrl = {funct7[5], funct3};
+                alu_ctrl = {1'b0, 1'b0, funct7[5], funct3};
                 reg_write = 1'b1;
+            end
+            
+            7'b0010011: begin
+                if (funct3 == 3'b101 && funct7[5] == 1)
+                      alu_ctrl = {1'b0, 1'b1, 1'b1, funct3};
+                 else
+                      alu_ctrl = {1'b0, 1'b1, 1'b0, funct3};
+                 reg_write = 1'b1;
             end
             
             default: begin
                 
-                alu_ctrl = 4'b0000;
+                alu_ctrl = 6'b000000;
                 reg_write = 1'b0;
             
             end

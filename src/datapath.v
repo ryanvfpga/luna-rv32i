@@ -5,7 +5,8 @@ module datapath(
     input rst,
     output [31:0] instruction,
     input reg_write,
-    input [3:0] alu_ctrl
+    input [5:0] alu_ctrl 
+    //The last 4 bits are the ALU function, and the first two bits are select lines for ALU input MUXes.
     );
     
     wire [31:0] pc;
@@ -36,7 +37,9 @@ module datapath(
     reg ex_reg_write;
     reg mem_reg_write;
     
-    reg [3 :0]id_alu_ctrl;
+    reg [5 :0]id_alu_ctrl;
+    
+    wire [31:0] alu_in_2;
     
     assign instruction = if_instr;
     
@@ -70,8 +73,11 @@ module datapath(
      .rd(mem_rd), .write_data_in(mem_alu_result), .reg_write(mem_reg_write), .clk(clk), .rs1_read_o(rs1), .rs2_read_o(rs2));
     
     immgen immgen_inst(.instr(if_instr), .imm_ctrl(3'b000), .imm(immediate));
+    wire t_branch;
     
-    alu alu_inst (.alu_ctrl(id_alu_ctrl), .a(id_rs1), .b(id_rs2), .alu_result(alu_result), .t_branch(4'b1010));
+    assign alu_in_2 = id_alu_ctrl[4]?id_immediate:id_rs2;
+    
+    alu alu_inst (.alu_ctrl(id_alu_ctrl[3:0]), .a(id_rs1), .b(alu_in_2), .alu_result(alu_result), .t_branch(t_branch));
     
     
 
