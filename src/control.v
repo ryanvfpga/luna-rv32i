@@ -23,7 +23,8 @@
 module control(
     input [31:0] instr,
     output reg reg_write,
-    output reg [5:0] alu_ctrl
+    output reg [5:0] alu_ctrl,
+    output reg [2:0] imm_ctrl
     
     );
     
@@ -37,15 +38,20 @@ module control(
     
     
     always @(*) begin
-    
+        
+         
+        alu_ctrl = 6'b000000;
+        reg_write = 1'b0;
+        imm_ctrl = 3'b000;
+          
         case(opcode)
         
-            7'b0110011: begin
+            7'b0110011: begin // R-type
                 alu_ctrl = {1'b0, 1'b0, funct7[5], funct3};
                 reg_write = 1'b1;
             end
             
-            7'b0010011: begin
+            7'b0010011: begin //I-type Arithmetic
                 if (funct3 == 3'b101 && funct7[5] == 1)
                       alu_ctrl = {1'b0, 1'b1, 1'b1, funct3};
                  else
@@ -53,13 +59,16 @@ module control(
                  reg_write = 1'b1;
             end
             
-            default: begin
+            7'b0000011: begin //LW
                 
-                alu_ctrl = 6'b000000;
-                reg_write = 1'b0;
+                alu_ctrl = {1'b0, 1'b1, 4'b0000};
+                imm_ctrl = 3'b000;
+                reg_write = 1'b1;
             
             end
-        
+            
+            
+           
         endcase
     
     
