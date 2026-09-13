@@ -25,7 +25,8 @@ module control(
     output reg [1:0] reg_ctrl, //LSB is reg_write, and MSB is the select bit for data to be written into regfile either from ALU/or from memory.
     output reg [5:0] alu_ctrl,
     output reg [2:0] imm_ctrl,
-    output reg mem_write
+    output reg mem_write,
+    output reg pc_ctrl
   
     );
     
@@ -40,6 +41,7 @@ module control(
     
     always @(*) begin
         
+        pc_ctrl = 1'b0;
         mem_write = 1'b0;
         alu_ctrl = 6'b000000;
         reg_ctrl = 2'b00;
@@ -78,6 +80,15 @@ module control(
                 mem_write = 1'b1;
                 
             end
+            
+            7'b1100011: begin // Branch Instructions
+                
+                imm_ctrl = 3'b011;
+                pc_ctrl = 1;
+                alu_ctrl = {1'b0, 1'b0, 1'b0, funct3};
+                
+            end
+            
             
            
         endcase
