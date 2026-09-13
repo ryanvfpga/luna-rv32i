@@ -9,7 +9,8 @@ module datapath(
     input [2:0] imm_ctrl,
     input mem_write,
     input pc_ctrl,
-    input  jump_ctrl
+    input  jump_ctrl,
+    input jalr_ctrl
     //The last 4 bits are the ALU function, and the first two bits are select lines for ALU input MUXes.
     );
     
@@ -32,6 +33,8 @@ module datapath(
     reg [31:0] id_rs2;
     reg [31:0] ex_rs2;
     
+    reg id_jalr_ctrl;
+    
     reg id_jump_ctrl;
     
     wire [31:0] immediate;
@@ -41,8 +44,8 @@ module datapath(
     reg [31:0] ex_alu_result;
    
     reg [31:0] mem_alu_result;
-    
-    wire [31:0] branch_target_pc = id_pc + id_immediate;
+   
+    wire [31:0] branch_target_pc = id_jalr_ctrl?(alu_result & 32'hFFFFFFFE):id_pc + id_immediate;
     
     reg [4:0] id_rd;
     reg [4:0] ex_rd;
@@ -64,7 +67,7 @@ module datapath(
     
     pc pc_inst (.clk(clk), .pc_write(1'b1), .pc_next(pc_next), .pc(pc), .rst(rst));
     
-    assign pc_next = (id_pc_ctrl & (t_branch|id_jump_ctrl))?branch_target_pc: pc + 32'd4;   //t_branch is whether the branch instruction tells us to jump or not, 
+    assign pc_next = (id_pc_ctrl & (t_branch|id_jump_ctrl|id_jalr_ctrl))?branch_target_pc: pc + 32'd4;   //t_branch is whether the branch instruction tells us to jump or not, 
     //and id_pc_ctrl is the select line deciding wether we update PC with PC + 4 or branch_target_pc
     
     instrmem instrmem_inst(.address(pc), .data(instr));
@@ -85,6 +88,7 @@ module datapath(
             id_pc <= 32'd0;
             id_pc_ctrl <= 1'b0;
             id_jump_ctrl <= 1'b0;
+            id_jalr_ctrl <= 1'b0;
             
             ex_alu_result <= 32'd0;
             ex_rd <= 5'd0;
@@ -114,6 +118,7 @@ module datapath(
             id_pc <= if_pc;
             id_pc_ctrl <= pc_ctrl;
             id_jump_ctrl <= jump_ctrl;
+            id_jalr_ctrl <= jalr_ctrl;
             
             ex_alu_result <= alu_result;
             ex_rd <= id_rd;

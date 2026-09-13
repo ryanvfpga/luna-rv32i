@@ -27,7 +27,8 @@ module control(
     output reg [2:0] imm_ctrl,
     output reg mem_write,
     output reg pc_ctrl,
-    output reg jump_ctrl
+    output reg jump_ctrl,
+    output reg jalr_ctrl
     );
     
     wire [6:0] opcode;
@@ -47,6 +48,7 @@ module control(
         reg_ctrl = 3'b000;
         imm_ctrl = 3'b000;
         jump_ctrl = 1'b0;
+        jalr_ctrl = 1'b0;
           
         case(opcode)
         
@@ -110,7 +112,16 @@ module control(
                 reg_ctrl =3'b101;
              
             end
-            
+             
+             7'b1100111: begin
+                
+                imm_ctrl = 3'b000;
+                pc_ctrl = 1'b1;
+                jalr_ctrl = 1'b1;
+                reg_ctrl = 3'b101;
+                alu_ctrl = 6'b010000;
+             
+             end
            
         endcase
     
