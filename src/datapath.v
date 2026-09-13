@@ -4,11 +4,13 @@ module datapath(
     input clk,
     input rst,
     output [31:0] instruction,
-    input [1:0] reg_ctrl,
+    input [2:0] reg_ctrl,
     input [5:0] alu_ctrl, 
     input [2:0] imm_ctrl,
     input mem_write,
-    input pc_ctrl
+    input pc_ctrl,
+    input  jump_ctrl,
+    input jalr_ctrl
     //The last 4 bits are the ALU function, and the first two bits are select lines for ALU input MUXes.
     );
     
@@ -18,6 +20,8 @@ module datapath(
     
     reg [31:0] if_pc;
     reg [31:0] id_pc;
+    reg [31:0] ex_pc;
+    reg [31:0] mem_pc;
     
     wire [31:0] instr;
     reg [31:0] if_instr;
@@ -29,6 +33,10 @@ module datapath(
     reg [31:0] id_rs2;
     reg [31:0] ex_rs2;
     
+    reg id_jalr_ctrl;
+    
+    reg id_jump_ctrl;
+    
     wire [31:0] immediate;
     reg [31:0] id_immediate;
     
@@ -36,16 +44,16 @@ module datapath(
     reg [31:0] ex_alu_result;
    
     reg [31:0] mem_alu_result;
-    
-    wire [31:0] branch_target_pc = id_pc + id_immediate;
+   
+    wire [31:0] branch_target_pc = id_jalr_ctrl?(alu_result & 32'hFFFFFFFE):id_pc + id_immediate;
     
     reg [4:0] id_rd;
     reg [4:0] ex_rd;
     reg [4:0] mem_rd;
     
-    reg [1:0]id_reg_ctrl;
-    reg [1:0]ex_reg_ctrl;
-    reg [1:0]mem_reg_ctrl;
+    reg [2:0]id_reg_ctrl;
+    reg [2:0]ex_reg_ctrl;
+    reg [2:0]mem_reg_ctrl;
     
     reg [5:0]id_alu_ctrl;
     
@@ -59,7 +67,8 @@ module datapath(
     
     pc pc_inst (.clk(clk), .pc_write(1'b1), .pc_next(pc_next), .pc(pc), .rst(rst));
     
-    assign pc_next = (id_pc_ctrl & t_branch)?branch_target_pc: pc + 32'd4;
+    assign pc_next = (id_pc_ctrl & (t_branch|id_jump_ctrl|id_jalr_ctrl))?branch_target_pc: pc + 32'd4;   //t_branch is whether the branch instruction tells us to jump or not, 
+    //and id_pc_ctrl is the select line deciding wether we update PC with PC + 4 or branch_target_pc
     
     instrmem instrmem_inst(.address(pc), .data(instr));
     
@@ -74,21 +83,26 @@ module datapath(
             id_immediate <= 32'd0;
             id_rd <= 5'd0;
             id_alu_ctrl <= 6'b0;
-            id_reg_ctrl <= 2'b0;
+            id_reg_ctrl <= 3'b0;
             id_mem_write <= 1'b0;
             id_pc <= 32'd0;
             id_pc_ctrl <= 1'b0;
+            id_jump_ctrl <= 1'b0;
+            id_jalr_ctrl <= 1'b0;
             
             ex_alu_result <= 32'd0;
             ex_rd <= 5'd0;
-            ex_reg_ctrl <= 2'b0;
+            ex_reg_ctrl <= 3'b0;
             ex_mem_write <= 1'b0;
             ex_rs2 <= 32'd0;
+            ex_pc <= 32'd0;
             
             mem_alu_result <= 32'd0;
             mem_rd <= 5'd0;
-            mem_reg_ctrl <= 2'b0;
+            mem_reg_ctrl <= 3'b0;
             mem_datamem_read <= 32'd0;
+            mem_pc <= 32'd0;
+            
         end else begin
             
             if_instr <= instr;
@@ -103,26 +117,39 @@ module datapath(
             id_mem_write <= mem_write;
             id_pc <= if_pc;
             id_pc_ctrl <= pc_ctrl;
+            id_jump_ctrl <= jump_ctrl;
+            id_jalr_ctrl <= jalr_ctrl;
             
             ex_alu_result <= alu_result;
             ex_rd <= id_rd;
             ex_reg_ctrl <= id_reg_ctrl;
             ex_mem_write <= id_mem_write;
             ex_rs2 <= id_rs2;
+            ex_pc <= id_pc;
             
             mem_alu_result <= ex_alu_result;
             mem_rd <= ex_rd;
             mem_reg_ctrl <= ex_reg_ctrl;
             mem_datamem_read <= datamem_read;
+            mem_pc <= ex_pc;
         end
     end
     
     wire [31:0] datamem_read;
     reg [31:0] mem_datamem_read;
-    wire [31:0] regfile_data_in;
+    reg [31:0] regfile_data_in;
     
-    assign regfile_data_in = mem_reg_ctrl[1]?mem_datamem_read:mem_alu_result;
+    always @(*) begin
+        case(mem_reg_ctrl[2:1])
+            2'b00: regfile_data_in = mem_alu_result;
+            2'b01: regfile_data_in = mem_datamem_read;
+            2'b10: regfile_data_in = mem_pc + 32'd4;
+            default: regfile_data_in = 32'd0; 
+        endcase
+        
     
+    end
+   
     regfile rf (.rs1(if_instr[19:15]), .rs2(if_instr[24:20]),
      .rd(mem_rd), .write_data_in(regfile_data_in), .reg_write(mem_reg_ctrl[0]), .clk(clk), .rs1_read_o(rs1), .rs2_read_o(rs2));
     
