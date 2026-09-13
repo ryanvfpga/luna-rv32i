@@ -22,12 +22,12 @@
 
 module control(
     input [31:0] instr,
-    output reg [1:0] reg_ctrl, //LSB is reg_write, and MSB is the select bit for data to be written into regfile either from ALU/or from memory.
+    output reg [2:0] reg_ctrl, //LSB is reg_write, and MSB is the select bit for data to be written into regfile either from ALU/or from memory.
     output reg [5:0] alu_ctrl,
     output reg [2:0] imm_ctrl,
     output reg mem_write,
-    output reg pc_ctrl
-  
+    output reg pc_ctrl,
+    output reg jump_ctrl
     );
     
     wire [6:0] opcode;
@@ -44,14 +44,15 @@ module control(
         pc_ctrl = 1'b0;
         mem_write = 1'b0;
         alu_ctrl = 6'b000000;
-        reg_ctrl = 2'b00;
+        reg_ctrl = 3'b000;
         imm_ctrl = 3'b000;
+        jump_ctrl = 1'b0;
           
         case(opcode)
         
             7'b0110011: begin // R-type
                 alu_ctrl = {1'b0, 1'b0, funct7[5], funct3};
-                reg_ctrl = 2'b01;
+                reg_ctrl = 3'b001;
                 
             end
             
@@ -60,7 +61,7 @@ module control(
                       alu_ctrl = {1'b0, 1'b1, 1'b1, funct3};
                  else
                       alu_ctrl = {1'b0, 1'b1, 1'b0, funct3};
-                 reg_ctrl = 2'b01;
+                 reg_ctrl = 3'b001;
                  
                  
             end
@@ -68,14 +69,14 @@ module control(
             7'b0000011: begin //LW
                 
                 alu_ctrl = {1'b0, 1'b1, 4'b0000};
-                reg_ctrl = 2'b11;
+                reg_ctrl = 3'b011;
             
             end
             
             7'b0100011: begin //SW
                 
                 alu_ctrl = {1'b0, 1'b1, 4'b0000};
-                reg_ctrl = 2'b00;
+                reg_ctrl = 3'b000;
                 imm_ctrl = 3'b001;
                 mem_write = 1'b1;
                 
@@ -98,10 +99,17 @@ module control(
                         default: alu_ctrl = 4'b000000;
                         
                     endcase
-                    
-                
+                   
             end
             
+             7'b1101111: begin
+             
+                imm_ctrl = 3'b100;
+                pc_ctrl = 1'b1;
+                jump_ctrl = 1'b1;
+                reg_ctrl =3'b101;
+             
+            end
             
            
         endcase
