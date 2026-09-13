@@ -24,12 +24,12 @@ module alu(
     
     always @(*) begin
         case (alu_ctrl) 
-            4'b0000: t_branch = (a == b);                
-            4'b0001: t_branch = (a != b);                
-            4'b0100: t_branch = ($signed(a) < $signed(b)); 
-            4'b0101: t_branch = ($signed(a) >= $signed(b));
-            4'b0110: t_branch = (a < b);                 
-            4'b0111: t_branch = (a >= b);                
+            4'b1010: t_branch = (a == b);                
+            4'b1011: t_branch = (a != b);                
+            4'b1100: t_branch = ($signed(a) < $signed(b)); 
+            4'b1101: t_branch = ($signed(a) >= $signed(b));
+            4'b1110: t_branch = (a < b);                 
+            4'b1111: t_branch = (a >= b);                
             default: t_branch = 1'b0;
        endcase
     end

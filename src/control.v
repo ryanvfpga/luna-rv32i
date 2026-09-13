@@ -85,7 +85,20 @@ module control(
                 
                 imm_ctrl = 3'b011;
                 pc_ctrl = 1;
-                alu_ctrl = {1'b0, 1'b0, 1'b0, funct3};
+                
+                
+                case(funct3)
+                        3'b000: alu_ctrl = 4'b001010; // BEQ
+                        3'b001: alu_ctrl = 4'b001011; // BNE
+                        3'b100: alu_ctrl = 4'b001100; // BLT
+                        3'b101: alu_ctrl = 4'b001101; // BGE
+                        3'b110: alu_ctrl = 4'b001110; // BLTU
+                        3'b111: alu_ctrl = 4'b001111; // BGEU
+                        
+                        default: alu_ctrl = 4'b000000;
+                        
+                    endcase
+                    
                 
             end
             

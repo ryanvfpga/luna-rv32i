@@ -64,30 +64,57 @@ module datapath(
     instrmem instrmem_inst(.address(pc), .data(instr));
     
     always @(posedge clk) begin
-        if_instr <= instr;
-        if_pc <= pc;
-        
-        id_rs1   <= rs1;
-        id_rs2   <= rs2;
-        id_immediate <= immediate;
-        id_rd <= if_instr[11:7]; //The field that contains the destination addr for regfile.
-        id_alu_ctrl <= alu_ctrl;
-        id_reg_ctrl <= reg_ctrl;
-        id_mem_write <= mem_write;
-        id_pc <= if_pc;
-        id_pc_ctrl <= pc_ctrl;
-        
-        ex_alu_result <= alu_result;
-        ex_rd <= id_rd;
-        ex_reg_ctrl <= id_reg_ctrl;
-        ex_mem_write <= id_mem_write;
-        ex_rs2 <= id_rs2;
-        
-        mem_alu_result <= ex_alu_result;
-        mem_rd <= ex_rd;
-        mem_reg_ctrl <= ex_reg_ctrl;
-        mem_datamem_read <= datamem_read;
-        
+        if (rst) begin
+            
+            if_instr <= 32'h00000013; 
+            if_pc <= 32'd0;
+            
+            id_rs1 <= 32'd0;
+            id_rs2 <= 32'd0;
+            id_immediate <= 32'd0;
+            id_rd <= 5'd0;
+            id_alu_ctrl <= 6'b0;
+            id_reg_ctrl <= 2'b0;
+            id_mem_write <= 1'b0;
+            id_pc <= 32'd0;
+            id_pc_ctrl <= 1'b0;
+            
+            ex_alu_result <= 32'd0;
+            ex_rd <= 5'd0;
+            ex_reg_ctrl <= 2'b0;
+            ex_mem_write <= 1'b0;
+            ex_rs2 <= 32'd0;
+            
+            mem_alu_result <= 32'd0;
+            mem_rd <= 5'd0;
+            mem_reg_ctrl <= 2'b0;
+            mem_datamem_read <= 32'd0;
+        end else begin
+            
+            if_instr <= instr;
+            if_pc <= pc;
+            
+            id_rs1   <= rs1;
+            id_rs2   <= rs2;
+            id_immediate <= immediate;
+            id_rd <= if_instr[11:7]; 
+            id_alu_ctrl <= alu_ctrl;
+            id_reg_ctrl <= reg_ctrl;
+            id_mem_write <= mem_write;
+            id_pc <= if_pc;
+            id_pc_ctrl <= pc_ctrl;
+            
+            ex_alu_result <= alu_result;
+            ex_rd <= id_rd;
+            ex_reg_ctrl <= id_reg_ctrl;
+            ex_mem_write <= id_mem_write;
+            ex_rs2 <= id_rs2;
+            
+            mem_alu_result <= ex_alu_result;
+            mem_rd <= ex_rd;
+            mem_reg_ctrl <= ex_reg_ctrl;
+            mem_datamem_read <= datamem_read;
+        end
     end
     
     wire [31:0] datamem_read;
