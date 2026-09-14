@@ -3,7 +3,7 @@
 module datamem(
     input [31:0] address,
     input [31:0] write_data,
-    output [31:0] read_data,
+    output reg [31:0] data,
     input clk,
     input mem_write,
     input [2:0] funct3
@@ -11,7 +11,34 @@ module datamem(
     
     reg [31:0] regs [0:1023];
     
+    reg [7:0] byte;
+    reg [15:0] halfword;
+    wire [31:0] read_data;
+    
     assign read_data = regs[address[31:2]];
+    
+    always @(*) begin
+        case(address[1:0]) 
+            2'b00: byte = read_data[7:0];
+            2'b01: byte = read_data[15:8];
+            2'b10: byte = read_data[23:16];
+            2'b11: byte = read_data[31:24];
+        endcase
+       
+        case(address[1])
+            1'b0: halfword = read_data[15:0];
+            1'b1: halfword = read_data[31:16];
+        endcase
+       
+        case(funct3) 
+            3'b000: data = {{24{byte[7]}}, byte};     // LB
+            3'b001: data = {{16{halfword[15]}}, halfword}; // LH
+            3'b010: data = read_data;                 // LW
+            3'b100: data = {24'b0, byte};             // LBU
+            3'b101: data = {16'b0, halfword};         // LHU
+            default: data = read_data;
+        endcase
+    end
     
     always @(posedge clk) begin
         if (mem_write) begin
