@@ -71,8 +71,9 @@ module datapath(
     reg [2:0] ex_funct3;
 
     wire pc_write = !load_use_hazard;
-    wire id_stall = load_use_hazard;
-    wire ex_flush = load_use_hazard;
+
+    wire if_id_stall = load_use_hazard; //To stall instructions currently in ID stage or IF/ID boundary register
+    wire id_ex_flush = load_use_hazard; 
 
     wire load_use_hazard;
     assign load_use_hazard = (id_reg_ctrl[2:1] == 2'b01) && (id_rd != 5'd0) && ((if_instr[19:15] == id_rd) || (if_instr[24:20] == id_rd));
@@ -84,7 +85,10 @@ module datapath(
     pc pc_inst (.clk(clk), .pc_write(pc_write), .pc_next(pc_next), .pc(pc), .rst(rst));
 
     wire [31:0] branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
-    assign pc_next = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl)) ? branch_target_pc : pc + 32'd4;   
+    assign pc_next =  branch_taken? branch_target_pc : pc + 32'd4;   
+
+
+    wire branch_taken = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl));
 
     // --- Forwarding Multiplexers ---
     wire [1:0] t_forward_1;
@@ -127,6 +131,12 @@ module datapath(
         endcase
     end
     
+
+    // if_ means it is the register at boundary of IF/ID
+    // id_ means it is the register at boundary of ID/EX
+    // ex_ means it is the register at boundary of EX/MEM
+    // mem_ means it is the register at boundary of MEM/WB
+
     always @(posedge clk) begin
         if (rst) begin
             if_instr <= 32'h00000013; 
@@ -160,14 +170,16 @@ module datapath(
             mem_reg_ctrl <= 3'b0;
             mem_datamem_read <= 32'd0;
             mem_pc <= 32'd0;
+
         end else begin
 
-            if(!id_stall) begin
+            if(!if_id_stall) begin
                 if_instr <= instr;
                 if_pc <= pc;
             end
             
-        if (ex_flush) begin
+        if (id_ex_flush || branch_taken) begin
+            
                 id_rs1 <= 32'd0;
                 id_rs2 <= 32'd0;
                 id_immediate <= 32'd0;
@@ -182,7 +194,7 @@ module datapath(
                 id_funct3 <= 3'b0;
                 id_rs1_addr <= 5'b0;
                 id_rs2_addr <= 5'b0;
-                
+
             end else begin
                 id_rs1 <= rs1;
                 id_rs2 <= rs2;
