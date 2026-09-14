@@ -6,7 +6,7 @@ module cpu(
     
     wire [31:0] instruction;
     wire [2:0] reg_ctrl;
-    wire [5:0] alu_ctrl;
+    wire [6:0] alu_ctrl;
     wire [2:0] imm_ctrl;
     wire mem_write;
     wire pc_ctrl;
