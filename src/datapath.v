@@ -70,10 +70,18 @@ module datapath(
     reg [2:0] id_funct3;
     reg [2:0] ex_funct3;
 
+    wire pc_write = !load_use_hazard;
+    wire id_stall = load_use_hazard;
+    wire ex_flush = load_use_hazard;
+
+    wire load_use_hazard;
+    assign load_use_hazard = (id_reg_ctrl[2:1] == 2'b01) && (id_rd != 5'd0) && ((if_instr[19:15] == id_rd) || (if_instr[24:20] == id_rd));
+
+
     assign instruction = if_instr;
     
     instrmem instrmem_inst(.address(pc), .data(instr));
-    pc pc_inst (.clk(clk), .pc_write(1'b1), .pc_next(pc_next), .pc(pc), .rst(rst));
+    pc pc_inst (.clk(clk), .pc_write(pc_write), .pc_next(pc_next), .pc(pc), .rst(rst));
 
     wire [31:0] branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
     assign pc_next = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl)) ? branch_target_pc : pc + 32'd4;   
@@ -153,23 +161,44 @@ module datapath(
             mem_datamem_read <= 32'd0;
             mem_pc <= 32'd0;
         end else begin
-            if_instr <= instr;
-            if_pc <= pc;
+
+            if(!id_stall) begin
+                if_instr <= instr;
+                if_pc <= pc;
+            end
             
-            id_rs1 <= rs1;
-            id_rs2 <= rs2;
-            id_immediate <= immediate;
-            id_rd <= if_instr[11:7]; 
-            id_alu_ctrl <= alu_ctrl;
-            id_reg_ctrl <= reg_ctrl;
-            id_mem_write <= mem_write;
-            id_pc <= if_pc;
-            id_pc_ctrl <= pc_ctrl;
-            id_jump_ctrl <= jump_ctrl;
-            id_jalr_ctrl <= jalr_ctrl;
-            id_funct3 <= if_instr[14:12];
-            id_rs1_addr <= if_instr[19:15];
-            id_rs2_addr <= if_instr[24:20];
+        if (ex_flush) begin
+                id_rs1 <= 32'd0;
+                id_rs2 <= 32'd0;
+                id_immediate <= 32'd0;
+                id_rd <= 5'd0;            
+                id_alu_ctrl <= 7'b0;
+                id_reg_ctrl <= 3'b0;      
+                id_mem_write <= 1'b0;   
+                id_pc <= 32'd0;
+                id_pc_ctrl <= 1'b0;
+                id_jump_ctrl <= 1'b0;
+                id_jalr_ctrl <= 1'b0;
+                id_funct3 <= 3'b0;
+                id_rs1_addr <= 5'b0;
+                id_rs2_addr <= 5'b0;
+                
+            end else begin
+                id_rs1 <= rs1;
+                id_rs2 <= rs2;
+                id_immediate <= immediate;
+                id_rd <= if_instr[11:7]; 
+                id_alu_ctrl <= alu_ctrl;
+                id_reg_ctrl <= reg_ctrl;
+                id_mem_write <= mem_write;
+                id_pc <= if_pc;
+                id_pc_ctrl <= pc_ctrl;
+                id_jump_ctrl <= jump_ctrl;
+                id_jalr_ctrl <= jalr_ctrl;
+                id_funct3 <= if_instr[14:12];
+                id_rs1_addr <= if_instr[19:15];
+                id_rs2_addr <= if_instr[24:20];
+            end
             
             ex_alu_result <= alu_result;
             ex_rd <= id_rd;

@@ -1,3 +1,4 @@
+
 `timescale 1ns / 1ps
 
 module raw_hazard_tb();
@@ -47,15 +48,25 @@ module raw_hazard_tb();
         // sw  x11, 0(x0)   -> writes 30 into mem[0] (needs x11 forwarded to ex_rs2)
         dut.dp.instrmem_inst.mem_loc[9] = 32'h00b02023;
 
+        // Test 5: 4 Consecutive ADDs (WB-to-ID hazard / Negedge RF Read Check)
+        // add x12, x1, x2  -> x12 = 30 (Writes x12 in WB when x15 reads x12 in ID)
+        dut.dp.instrmem_inst.mem_loc[10] = 32'h00208633;
+        // add x13, x1, x2  -> x13 = 30
+        dut.dp.instrmem_inst.mem_loc[11] = 32'h002086b3;
+        // add x14, x1, x2  -> x14 = 30
+        dut.dp.instrmem_inst.mem_loc[12] = 32'h00208733;
+        // add x15, x12, x3 -> x15 = 30 + 5 = 35 (Requires negedge write to read fresh x12 in ID)
+        dut.dp.instrmem_inst.mem_loc[13] = 32'h003607b3;
+
         // NOPs to flush pipeline
-        dut.dp.instrmem_inst.mem_loc[10] = 32'h00000013;
-        dut.dp.instrmem_inst.mem_loc[11] = 32'h00000013;
-        dut.dp.instrmem_inst.mem_loc[12] = 32'h00000013;
-        dut.dp.instrmem_inst.mem_loc[13] = 32'h00000013;
         dut.dp.instrmem_inst.mem_loc[14] = 32'h00000013;
+        dut.dp.instrmem_inst.mem_loc[15] = 32'h00000013;
+        dut.dp.instrmem_inst.mem_loc[16] = 32'h00000013;
+        dut.dp.instrmem_inst.mem_loc[17] = 32'h00000013;
+        dut.dp.instrmem_inst.mem_loc[18] = 32'h00000013;
 
         #15 rst = 0;
-        #180;
+        #240;
 
         if (dut.dp.rf.regs[4] !== 32'd30) begin
             $display("Test 1 failed: x4 expected 30, got %d", dut.dp.rf.regs[4]);
@@ -75,6 +86,10 @@ module raw_hazard_tb();
         end
         if (dut.dp.dm.regs[0] !== 32'd30) begin
             $display("Test 4 failed (Store forward): mem[0] expected 30, got %d", dut.dp.dm.regs[0]);
+            err_count = err_count + 1;
+        end
+        if (dut.dp.rf.regs[15] !== 32'd35) begin
+            $display("Test 5 failed (Negedge RF WB->ID): x15 expected 35, got %d", dut.dp.rf.regs[15]);
             err_count = err_count + 1;
         end
 

@@ -14,7 +14,7 @@ module regfile(
     assign rs1_read_o = (rs1==0)?0:regs[rs1];
     assign rs2_read_o = (rs2==0)?0:regs[rs2];
     
-    always @(posedge clk)
+    always @(negedge clk)
         if(reg_write && rd != 0)
             regs[rd] <= write_data_in;
     
