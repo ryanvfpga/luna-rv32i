@@ -135,7 +135,7 @@ module control(
 
                 imm_ctrl = 3'b010;
                 reg_ctrl = 3'b001;
-                alu_ctrl = 7'b1010000;
+                alu_ctrl = 7'b101;
 
             end
             

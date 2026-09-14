@@ -97,8 +97,6 @@ module datapath(
     end
 
 
-
-
     // This is to control the register data input between the output of ALU (R/I type), output of data memory (Load) and PC + 4 (for Jump Instructions)
     always @(*) begin
         case(mem_reg_ctrl[2:1])
