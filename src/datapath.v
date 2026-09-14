@@ -4,12 +4,12 @@ module datapath(
     input clk,
     input rst,
     output [31:0] instruction,
-    input [2:0] reg_ctrl, // The LSB is reg_write, and first two bits are for MUX that determine where the input data to regfile is coming from.
-    input [6:0] alu_ctrl, // The last 4 bits are ALU function chooser, and first 2 bits are to select ALU inputs 1 and 2.
-    input [2:0] imm_ctrl, // Control signal for immediate generator
+    input [2:0] reg_ctrl,
+    input [6:0] alu_ctrl,
+    input [2:0] imm_ctrl,
     input mem_write,
     input pc_ctrl,
-    input  jump_ctrl, // Control signals indicating JAL and JALR
+    input  jump_ctrl,
     input jalr_ctrl
     ); 
 
@@ -27,10 +27,13 @@ module datapath(
     
     wire [31:0] rs1;
     wire [31:0] rs2;
-    
+
     reg [31:0] id_rs1;
     reg [31:0] id_rs2;
     reg [31:0] ex_rs2;
+
+    reg [4:0] id_rs1_addr;
+    reg [4:0] id_rs2_addr;
     
     reg id_jalr_ctrl;
     reg id_jump_ctrl;
@@ -75,14 +78,35 @@ module datapath(
     wire [31:0] branch_target_pc = id_jalr_ctrl ? (alu_result & 32'hFFFFFFFE) : id_pc + id_immediate;
     assign pc_next = (id_pc_ctrl & (t_branch | id_jump_ctrl | id_jalr_ctrl)) ? branch_target_pc : pc + 32'd4;   
 
-    assign alu_in_2 = id_alu_ctrl[4] ? id_immediate : id_rs2; 
+    // --- Forwarding Multiplexers ---
+    wire [1:0] t_forward_1;
+    wire [1:0] t_forward_2;
+    reg [31:0] fwd_rs1;
+    reg [31:0] fwd_rs2;
+
+    always @(*) begin
+        case(t_forward_1)
+            2'b01:   fwd_rs1 = ex_alu_result;
+            2'b10:   fwd_rs1 = regfile_data_in;
+            default: fwd_rs1 = id_rs1;
+        endcase
+
+        case(t_forward_2)
+            2'b01:   fwd_rs2 = ex_alu_result;
+            2'b10:   fwd_rs2 = regfile_data_in;
+            default: fwd_rs2 = id_rs2;
+        endcase
+    end
+
+    // Input selection: register vs immediate / PC / 0
+    assign alu_in_2 = id_alu_ctrl[4] ? id_immediate : fwd_rs2; 
 
     always @(*) begin
         case(id_alu_ctrl[6:5])
-            2'b00: alu_in_1 = id_rs1;
-            2'b01: alu_in_1 = 32'b0;
-            2'b10: alu_in_1 = id_pc;
-            default: alu_in_1 = id_rs1;
+            2'b00:   alu_in_1 = fwd_rs1;
+            2'b01:   alu_in_1 = 32'b0;
+            2'b10:   alu_in_1 = id_pc;
+            default: alu_in_1 = fwd_rs1;
         endcase
     end
 
@@ -112,6 +136,8 @@ module datapath(
             id_jump_ctrl <= 1'b0;
             id_jalr_ctrl <= 1'b0;
             id_funct3 <= 3'b0;
+            id_rs1_addr <= 5'b0;
+            id_rs2_addr <= 5'b0;
             
             ex_alu_result <= 32'd0;
             ex_rd <= 5'd0;
@@ -142,12 +168,14 @@ module datapath(
             id_jump_ctrl <= jump_ctrl;
             id_jalr_ctrl <= jalr_ctrl;
             id_funct3 <= if_instr[14:12];
+            id_rs1_addr <= if_instr[19:15];
+            id_rs2_addr <= if_instr[24:20];
             
             ex_alu_result <= alu_result;
             ex_rd <= id_rd;
             ex_reg_ctrl <= id_reg_ctrl;
             ex_mem_write <= id_mem_write;
-            ex_rs2 <= id_rs2;
+            ex_rs2 <= fwd_rs2;
             ex_pc <= id_pc;
             ex_funct3 <= id_funct3;
             
@@ -181,6 +209,17 @@ module datapath(
         .clk(clk),
         .mem_write(ex_mem_write),
         .funct3(ex_funct3)
+    );
+
+    forwardunit fw (
+        .rs1(id_rs1_addr),
+        .rs2(id_rs2_addr),
+        .ex_reg_write(ex_reg_ctrl[0]),
+        .mem_reg_write(mem_reg_ctrl[0]),
+        .ex_rd(ex_rd),
+        .mem_rd(mem_rd),
+        .forward_1(t_forward_1),
+        .forward_2(t_forward_2)
     );
 
 endmodule

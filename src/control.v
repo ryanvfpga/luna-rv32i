@@ -105,7 +105,6 @@ module control(
             end
             
              7'b1101111: begin //JAL
-             
                 imm_ctrl = 3'b100;
                 pc_ctrl = 1'b1;
                 jump_ctrl = 1'b1;
@@ -114,7 +113,6 @@ module control(
             end
              
              7'b1100111: begin //JALR
-                
                 imm_ctrl = 3'b000;
                 pc_ctrl = 1'b1;
                 jalr_ctrl = 1'b1;
@@ -124,7 +122,6 @@ module control(
              end
            
             7'b0110111: begin //LUI
-                
                 imm_ctrl = 3'b010;
                 reg_ctrl = 3'b001;
                 alu_ctrl = 7'b0110000;
@@ -132,7 +129,6 @@ module control(
             end
 
             7'b0010111: begin //AUIPAC
-
                 imm_ctrl = 3'b010;
                 reg_ctrl = 3'b001;
                 alu_ctrl = 7'b101;
