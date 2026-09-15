@@ -5,6 +5,7 @@
 *.runs/
 *.sim/
 .Xil/
+*.xpr
 *.gen/
 
 # Vivado Log and Journal Files

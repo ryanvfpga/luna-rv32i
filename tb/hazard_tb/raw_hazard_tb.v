@@ -94,7 +94,7 @@ module raw_hazard_tb();
         end
 
         if (err_count == 0) begin
-            $display("All RAW hazard forwarding tests passed successfully.");
+            $display("All RAW hazard forwarding tests passed successfully!");
         end else begin
             $display("Tests failed with %d errors.", err_count);
         end
